@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>AgroLink MVP - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container" id="login-container">
+    <h1>🌱 AgroLink - Login</h1>
+    <input id="username" placeholder="Nome do produtor" />
+    <input id="password" type="password" placeholder="Senha" />
+    <button onclick="login()">Entrar</button>
+    <p id="login-msg" class="error"></p>
+  </div>
+
+  <div class="container" id="app-container" style="display:none;">
+    <h1>🌱 AgroLink</h1>
+    <p class="subtitle" id="welcome-msg"></p>
+
+    <div class="card">
+      <h2>Cadastrar Produto</h2>
+      <input id="produto" placeholder="Nome do produto" />
+      <input id="preco" type="number" placeholder="Preço (R$)" />
+      <input id="quantidade" type="number" placeholder="Quantidade" />
+      <button onclick="cadastrarProduto()">Cadastrar</button>
+    </div>
+
+    <div class="card">
+      <h2>Produtos Cadastrados</h2>
+      <ul id="lista"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Simular Venda</h2>
+      <input id="vendaQtd" type="number" placeholder="Quantidade para vender" />
+      <select id="produtoSelect"></select>
+      <button onclick="vender()">Vender</button>
+    </div>
+
+    <button onclick="logout()" class="logout-btn">Sair</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
