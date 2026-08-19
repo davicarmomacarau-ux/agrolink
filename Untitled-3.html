@@ -1,0 +1,59 @@
+src/components/ProductCard.jsx
+import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Package } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+const categoryLabels = {
+  graos: "Grãos", frutas: "Frutas", hortalicas: "Hortaliças", animais: "Animais",
+  maquinas: "Máquinas", insumos: "Insumos", sementes: "Sementes", outros: "Outros"
+};
+
+const categoryColors = {
+  graos: "bg-amber-100 text-amber-800", frutas: "bg-red-100 text-red-800",
+  hortalicas: "bg-green-100 text-green-800", animais: "bg-orange-100 text-orange-800",
+  maquinas: "bg-blue-100 text-blue-800", insumos: "bg-purple-100 text-purple-800",
+  sementes: "bg-lime-100 text-lime-800", outros: "bg-gray-100 text-gray-800"
+};
+
+export default function ProductCard({ product }) {
+  const defaultImage = "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&h=300&fit=crop";
+  
+  return (
+    <Link to={createPageUrl("ProductDetails") + `?id=${product.id}`}>
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group">
+        <div className="relative h-48 overflow-hidden">
+          <img src={product.images?.[0] || defaultImage} alt={product.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <Badge className={`absolute top-3 left-3 ${categoryColors[product.category]}`}>
+            {categoryLabels[product.category]}
+          </Badge>
+          {product.status === "vendido" && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white font-bold text-xl">VENDIDO</span>
+            </div>
+          )}
+        </div>
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-lg text-gray-900 truncate">{product.title}</h3>
+          <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+            <MapPin className="w-4 h-4" /><span>{product.location}</span>
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <span className="text-2xl font-bold text-green-600">
+                R$ {product.price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-gray-500 text-sm">/{product.unit}</span>
+            </div>
+            <div className="flex items-center gap-1 text-gray-500 text-sm">
+              <Package className="w-4 h-4" /><span>{product.quantity} disp.</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}

@@ -1,0 +1,194 @@
+src/App.jsx
+import { Toaster } from "@/components/ui/toaster"
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClientInstance } from '@/lib/query-client'
+import NavigationTracker from '@/lib/NavigationTracker'
+import { pagesConfig } from './pages.config'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import PageNotFound from './lib/PageNotFound';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+
+const { Pages, Layout, mainPage } = pagesConfig;
+const mainPageKey = mainPage ?? Object.keys(Pages)[0];
+const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+
+const LayoutWrapper = ({ children, currentPageName }) => Layout ?
+  <Layout currentPageName={currentPageName}>{children}</Layout>
+  : <>{children}</>;
+
+const AuthenticatedApp = () => {
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+
+  if (isLoadingPublicSettings || isLoadingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    if (authError.type === 'user_not_registered') {
+      return <UserNotRegisteredError />;
+    } else if (authError.type === 'auth_required') {
+      navigateToLogin();
+      return null;
+    }
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={
+        <LayoutWrapper currentPageName={mainPageKey}>
+          <MainPage />
+        </LayoutWrapper>
+      } />
+      {Object.entries(Pages).map(([path, Page]) => (
+        <Route
+          key={path}
+          path={`/${path}`}
+          element={
+            <LayoutWrapper currentPageName={path}>
+              <Page />
+            </LayoutWrapper>
+          }
+        />
+      ))}
+      <Route path="*" element={<PageNotFound />} />
+    </Routes>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
+        <Router>
+          <NavigationTracker />
+          <AuthenticatedApp />
+        </Router>
+        <Toaster />
+      </QueryClientProvider>
+    </AuthProvider>
+  )
+}
+
+export default App
+📄 base44/entities/Product.jsonc
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "title": { "type": "string", "description": "Título do anúncio" },
+    "description": { "type": "string", "description": "Descrição detalhada do produto" },
+    "category": {
+      "type": "string",
+      "enum": ["graos", "frutas", "hortalicas", "animais", "maquinas", "insumos", "sementes", "outros"],
+      "description": "Categoria do produto"
+    },
+    "price": { "type": "number", "description": "Preço do produto" },
+    "unit": {
+      "type": "string",
+      "enum": ["unidade", "kg", "tonelada", "saca", "litro", "cabeca", "hectare"],
+      "description": "Unidade de medida"
+    },
+    "quantity": { "type": "number", "description": "Quantidade disponível" },
+    "location": { "type": "string", "description": "Localização (cidade/estado)" },
+    "images": { "type": "array", "items": { "type": "string" }, "description": "URLs das imagens do produto" },
+    "seller_name": { "type": "string", "description": "Nome do vendedor" },
+    "seller_phone": { "type": "string", "description": "Telefone do vendedor" },
+    "seller_email": { "type": "string", "description": "Email do vendedor" },
+    "status": {
+      "type": "string",
+      "enum": ["ativo", "vendido", "pausado"],
+      "default": "ativo",
+      "description": "Status do anúncio"
+    }
+  },
+  "required": ["title", "category", "price", "unit", "quantity", "location"]
+}
+📄 base44/entities/Sale.jsonc
+{
+  "name": "Sale",
+  "type": "object",
+  "properties": {
+    "product_id": { "type": "string", "description": "ID do produto vendido" },
+    "product_title": { "type": "string", "description": "Título do produto" },
+    "quantity": { "type": "number", "description": "Quantidade vendida" },
+    "unit_price": { "type": "number", "description": "Preço unitário" },
+    "total_amount": { "type": "number", "description": "Valor total da venda" },
+    "platform_fee": { "type": "number", "description": "Taxa da plataforma (5%)" },
+    "net_amount": { "type": "number", "description": "Valor líquido para o vendedor" },
+    "seller_email": { "type": "string", "description": "Email do vendedor" },
+    "buyer_name": { "type": "string", "description": "Nome do comprador" },
+    "buyer_email": { "type": "string", "description": "Email do comprador" },
+    "buyer_phone": { "type": "string", "description": "Telefone do comprador" },
+    "status": {
+      "type": "string",
+      "enum": ["pendente", "confirmada", "entregue", "cancelada"],
+      "default": "pendente",
+      "description": "Status da venda"
+    }
+  },
+  "required": ["product_id", "product_title", "quantity", "total_amount", "seller_email", "buyer_name"]
+}
+📄 src/components/ProductCard.jsx
+import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Package } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+const categoryLabels = {
+  graos: "Grãos", frutas: "Frutas", hortalicas: "Hortaliças", animais: "Animais",
+  maquinas: "Máquinas", insumos: "Insumos", sementes: "Sementes", outros: "Outros"
+};
+
+const categoryColors = {
+  graos: "bg-amber-100 text-amber-800", frutas: "bg-red-100 text-red-800",
+  hortalicas: "bg-green-100 text-green-800", animais: "bg-orange-100 text-orange-800",
+  maquinas: "bg-blue-100 text-blue-800", insumos: "bg-purple-100 text-purple-800",
+  sementes: "bg-lime-100 text-lime-800", outros: "bg-gray-100 text-gray-800"
+};
+
+export default function ProductCard({ product }) {
+  const defaultImage = "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&h=300&fit=crop";
+  
+  return (
+    <Link to={createPageUrl("ProductDetails") + `?id=${product.id}`}>
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group">
+        <div className="relative h-48 overflow-hidden">
+          <img src={product.images?.[0] || defaultImage} alt={product.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <Badge className={`absolute top-3 left-3 ${categoryColors[product.category]}`}>
+            {categoryLabels[product.category]}
+          </Badge>
+          {product.status === "vendido" && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white font-bold text-xl">VENDIDO</span>
+            </div>
+          )}
+        </div>
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-lg text-gray-900 truncate">{product.title}</h3>
+          <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+            <MapPin className="w-4 h-4" /><span>{product.location}</span>
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <span className="text-2xl font-bold text-green-600">
+                R$ {product.price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-gray-500 text-sm">/{product.unit}</span>
+            </div>
+            <div className="flex items-center gap-1 text-gray-500 text-sm">
+              <Package className="w-4 h-4" /><span>{product.quantity} disp.</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}

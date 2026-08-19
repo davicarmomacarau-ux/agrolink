@@ -1,0 +1,136 @@
+src/components/CategoryFilter.jsx
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Wheat, Apple, Salad, Dog, Tractor, FlaskConical, Sprout, MoreHorizontal } from "lucide-react";
+
+const categories = [
+  { value: "all", label: "Todos", icon: MoreHorizontal },
+  { value: "graos", label: "Grãos", icon: Wheat },
+  { value: "frutas", label: "Frutas", icon: Apple },
+  { value: "hortalicas", label: "Hortaliças", icon: Salad },
+  { value: "animais", label: "Animais", icon: Dog },
+  { value: "maquinas", label: "Máquinas", icon: Tractor },
+  { value: "insumos", label: "Insumos", icon: FlaskConical },
+  { value: "sementes", label: "Sementes", icon: Sprout },
+];
+
+export default function CategoryFilter({ selected, onSelect }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {categories.map((cat) => {
+        const Icon = cat.icon;
+        return (
+          <Button key={cat.value} variant={selected === cat.value ? "default" : "outline"}
+            className={selected === cat.value ? "bg-green-600 hover:bg-green-700" : ""}
+            onClick={() => onSelect(cat.value)}>
+            <Icon className="w-4 h-4 mr-2" />{cat.label}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+📄 src/Layout.jsx
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Home, Plus, Package, ShoppingBag, User, Menu, X, LogOut } from "lucide-react";
+
+export default function Layout({ children }) {
+  const [user, setUser] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+    };
+    loadUser();
+  }, []);
+
+  const navItems = [
+    { label: "Início", icon: Home, page: "Home" },
+    { label: "Anunciar", icon: Plus, page: "CreateProduct" },
+    { label: "Meus Anúncios", icon: Package, page: "MyProducts" },
+    { label: "Transações", icon: ShoppingBag, page: "MySales" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <Link to={createPageUrl("Home")} className="flex items-center gap-2">
+              <span className="text-2xl">🌾</span>
+              <span className="font-bold text-xl text-green-700">AgroLink</span>
+            </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.page} to={createPageUrl(item.page)}>
+                    <Button variant="ghost" className="text-gray-600 hover:text-green-700 hover:bg-green-50">
+                      <Icon className="w-4 h-4 mr-2" />{item.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-green-700" />
+                    </div>
+                    <span className="hidden sm:inline text-sm">{user?.full_name?.split(' ')[0] || 'Menu'}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user?.full_name}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => base44.auth.logout()}>
+                    <LogOut className="w-4 h-4 mr-2" />Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="ghost" size="icon" className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t bg-white">
+            <nav className="flex flex-col p-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start text-gray-600">
+                      <Icon className="w-4 h-4 mr-2" />{item.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+      </header>
+      <main>{children}</main>
+      <footer className="bg-white border-t mt-auto py-8">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <p className="text-gray-500 text-sm">© 2024 AgroLink - O marketplace do agronegócio brasileiro</p>
+          <p className="text-gray-400 text-xs mt-2">Taxa de 5% sobre vendas realizadas</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
